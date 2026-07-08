@@ -1,0 +1,8 @@
+=== RESUMEN DE AUDITORIA ===
+Estudiante: Jhojan Castaño
+Intentos fallidos detectados: 4
+IPs unicas detectadas: 2
+IP con mayor cantidad de intentos: 192.168.1.105
+Procesos criticos detectados: 2
+Puertos bajo ataque detectados: 2
+Estado general: ALERTA_ALTA
