@@ -1,58 +1,84 @@
-# Proyecto Final de Scripting - Mini Auditoria Automatizada de Servidor
+# Mini Auditoría Automatizada de Servidor
 
-**Nombre del estudiante:** Jhojan Stiven Castaño Jejen
+Proyecto de scripting que automatiza una auditoría básica de servidor combinando **Bash** y **Python**. Simula evidencias de seguridad (intentos de login fallidos, procesos con alto consumo de CPU y puertos bajo ataque), las procesa y genera reportes finales en JSON y texto plano.
 
-**Descripcion breve del proyecto:**
-Solucion de scripting que automatiza una mini auditoria de servidor combinando
-Bash y Python. El script Bash prepara y procesa evidencias simuladas (logs de
-autenticacion, procesos del sistema y logs de red), y el script Python ejecuta
-el Bash automaticamente, analiza los resultados y genera dos reportes finales:
-un JSON estructurado y un resumen ejecutivo en texto plano.
+## Descripción
 
-**Comando para ejecutar el proyecto:**
+- **Bash** prepara y filtra las evidencias simuladas usando `grep`, `cut`, `sort`, `uniq` y `awk`.
+- **Python** ejecuta el script Bash automáticamente, analiza los resultados y genera los reportes finales.
 
-Desde la raiz de la carpeta `proyecto_final_scripting/`:
+No requiere ejecutar nada manualmente: con un solo comando se genera todo el flujo.
+
+## Estructura del proyecto
 
 ```
+proyecto_final_scripting/
+├── scripts/
+│   ├── preparar_evidencias.sh   # Prepara y procesa evidencias (Bash)
+│   └── generar_reporte.py       # Orquesta todo y genera reportes (Python)
+├── output/
+│   ├── reporte_final.json       # Reporte estructurado
+│   └── resumen_ejecutivo.txt    # Resumen legible
+└── README.md
+```
+
+> La carpeta `work/` (archivos intermedios) se genera automáticamente al ejecutar el proyecto y no se versiona en este repositorio.
+
+## Requisitos
+
+- Bash
+- Python 3 (solo librerías estándar: `os`, `subprocess`, `re`, `json`)
+
+##  Cómo ejecutarlo
+
+Desde la raíz del proyecto:
+
+```bash
 python3 scripts/generar_reporte.py
 ```
 
-(En sistemas donde el comando `python` apunte a Python 3, tambien puede
-usarse `python scripts/generar_reporte.py`).
+Esto ejecuta automáticamente el script Bash, valida los datos generados, los analiza y crea los reportes en `output/`.
 
-**Que hace el script Bash (`scripts/preparar_evidencias.sh`):**
-- Crea la carpeta de trabajo `work/`.
-- Genera los datos base simulados: `auth.log`, `procesos.txt` y `red.log`.
-- Filtra las lineas con `Failed password` de `auth.log`.
-- Extrae las IPs de los intentos fallidos usando `cut`.
-- Cuenta las repeticiones de cada IP fallida con `sort` y `uniq -c`.
-- Usa `awk` para detectar procesos con CPU mayor a 80%.
-- Usa una tuberia con `cat`, `grep`, `cut`, `sort` y `uniq -c` para contar
-  los puertos marcados como `CRITICAL` en el log de red.
-- Guarda todos los resultados auxiliares dentro de `work/` para que Python
-  los pueda leer.
+## Qué hace cada script
 
-**Que hace el script Python (`scripts/generar_reporte.py`):**
-- Ejecuta automaticamente `scripts/preparar_evidencias.sh` con `subprocess.run()`.
-- Valida con `os.path.exists()` que existan los archivos auxiliares generados
-  por Bash.
-- Lee los archivos auxiliares con `with open()`.
-- Usa `re.findall()` para extraer IPs, un `set` para eliminarlas duplicadas,
-  listas para almacenar datos procesados y un diccionario para construir el
-  reporte final.
-- Clasifica los puertos bajo ataque mediante la funcion `clasificar_puerto(puerto)`.
-- Determina el `estado_general` de la auditoria (`ALERTA_ALTA`, `ALERTA_MEDIA`
-  o `SIN_ALERTAS`) segun las reglas del proyecto.
+**`preparar_evidencias.sh`**
+- Genera datos simulados: `auth.log`, `procesos.txt`, `red.log`.
+- Filtra intentos de login fallidos y extrae IPs con `cut`.
+- Cuenta repeticiones por IP con `sort` + `uniq -c`.
+- Detecta con `awk` procesos que superan 80% de CPU.
+- Cuenta puertos marcados como `CRITICAL` con una tubería `cat | grep | cut | sort | uniq -c`.
+
+**`generar_reporte.py`**
+- Ejecuta el script Bash con `subprocess.run()` y valida los archivos generados.
+- Extrae IPs con expresiones regulares (`re.findall()`).
+- Clasifica puertos con `clasificar_puerto(puerto)`:
+
+  | Puertos | Clasificación |
+  |---|---|
+  | 22, 23, 21, 3389 | ALTO RIESGO |
+  | 80, 443 | MEDIO RIESGO |
+  | otros | BAJO RIESGO |
+
+- Calcula el `estado_general` (`ALERTA_ALTA`, `ALERTA_MEDIA`, `SIN_ALERTAS`).
 - Genera `output/reporte_final.json` y `output/resumen_ejecutivo.txt`.
-- Maneja errores de ejecucion, lectura y procesamiento con `try/except`.
 
-**Archivos finales generados:**
-- `output/reporte_final.json`
-- `output/resumen_ejecutivo.txt`
+## Ejemplo de salida
 
-**Observaciones o errores conocidos:**
-- No se utilizan librerias externas de Python, solo `os`, `subprocess`, `re` y `json`.
-- Todas las rutas usadas en ambos scripts son relativas a la raiz del proyecto.
-- La carpeta `work/` contiene archivos auxiliares intermedios y no es un
-  entregable obligatorio, pero se conserva para facilitar la trazabilidad
-  del proceso.
+```json
+{
+    "total_intentos_fallidos": 4,
+    "ips_unicas": 2,
+    "ip_mas_repetida": "192.168.1.105",
+    "procesos_criticos": 2,
+    "puertos_bajo_ataque": [
+        { "puerto": 22, "conteo": 3, "riesgo": "ALTO RIESGO" },
+        { "puerto": 443, "conteo": 1, "riesgo": "MEDIO RIESGO" }
+    ],
+    "estado_general": "ALERTA_ALTA"
+}
+```
+
+## Notas
+
+- No se usan librerías externas de Python.
+- Todas las rutas son relativas a la raíz del proyecto.
